@@ -3,7 +3,7 @@ import os
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+
 from langchain.evaluation.qa import QAEvalChain
 
 from src.chains import ask, get_llm
@@ -75,7 +75,7 @@ GROUND_TRUTH = [
 ]
 
 
-def generate_predictions(ground_truth=GROUND_TRUTH, model="gpt-3.5-turbo"):
+def generate_predictions(ground_truth=GROUND_TRUTH, model="llama-3.3-70b-versatile"):
     """Run the QA chain on each ground-truth question and collect predictions."""
     predictions = []
     for i, qa in enumerate(ground_truth, 1):
@@ -85,7 +85,7 @@ def generate_predictions(ground_truth=GROUND_TRUTH, model="gpt-3.5-turbo"):
     return predictions
 
 
-def evaluate(ground_truth=GROUND_TRUTH, predictions=None, model="gpt-3.5-turbo"):
+def evaluate(ground_truth=GROUND_TRUTH, predictions=None, model="llama-3.3-70b-versatile"):
     """Evaluate predictions against ground truth using QAEvalChain."""
     if predictions is None:
         print("Generating predictions...")

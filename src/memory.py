@@ -3,7 +3,7 @@ import os
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from langchain.prompts import PromptTemplate
@@ -49,7 +49,7 @@ def create_memory():
     )
 
 
-def build_conversational_chain(memory=None, model="gpt-3.5-turbo"):
+def build_conversational_chain(memory=None, model="llama-3.3-70b-versatile"):
     """Build a ConversationalRetrievalChain combining RAG + memory."""
     llm = get_llm(model)
     retriever = get_retriever(k=3)
@@ -71,7 +71,7 @@ def build_conversational_chain(memory=None, model="gpt-3.5-turbo"):
 class ChatSession:
     """Manages a conversational RAG session with persistent memory."""
 
-    def __init__(self, model="gpt-3.5-turbo"):
+    def __init__(self, model="llama-3.3-70b-versatile"):
         self.chain, self.memory = build_conversational_chain(model=model)
 
     def ask(self, question: str) -> str:

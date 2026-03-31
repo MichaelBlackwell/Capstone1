@@ -4,7 +4,7 @@ os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 from dotenv import load_dotenv
 from langchain.schema import Document
-from langchain_openai import OpenAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
 from src.data_loader import get_data
@@ -132,7 +132,7 @@ def build_documents(df, summaries):
 
 def create_vector_store(documents, persist_dir=VECTOR_STORE_DIR):
     """Embed documents and store in a FAISS vector store. Persists to disk."""
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     vector_store = FAISS.from_documents(documents, embeddings)
     vector_store.save_local(persist_dir)
     print(f"Vector store saved to {persist_dir} ({len(documents)} documents)")
@@ -141,7 +141,7 @@ def create_vector_store(documents, persist_dir=VECTOR_STORE_DIR):
 
 def load_vector_store(persist_dir=VECTOR_STORE_DIR):
     """Load a previously persisted FAISS vector store from disk."""
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     vector_store = FAISS.load_local(
         persist_dir, embeddings, allow_dangerous_deserialization=True
     )

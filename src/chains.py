@@ -3,7 +3,7 @@ import os
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import RetrievalQA
 from langchain.schema import StrOutputParser
@@ -15,9 +15,9 @@ from src.data_loader import get_data
 load_dotenv()
 
 
-def get_llm(model="gpt-3.5-turbo", temperature=0.3):
-    """Return a ChatOpenAI instance."""
-    return ChatOpenAI(model=model, temperature=temperature)
+def get_llm(model="llama-3.3-70b-versatile", temperature=0.3):
+    """Return a ChatGroq instance."""
+    return ChatGroq(model=model, temperature=temperature)
 
 
 # ---------------------------------------------------------------------------
@@ -66,7 +66,7 @@ Detailed Analysis:"""
 # Chain builders
 # ---------------------------------------------------------------------------
 
-def build_qa_chain(model="gpt-3.5-turbo"):
+def build_qa_chain(model="llama-3.3-70b-versatile"):
     """Build a RetrievalQA chain linking the hybrid retriever to the QA prompt and LLM."""
     llm = get_llm(model)
     retriever = get_retriever(k=3)
@@ -81,7 +81,7 @@ def build_qa_chain(model="gpt-3.5-turbo"):
     return chain
 
 
-def build_summary_chain(model="gpt-3.5-turbo"):
+def build_summary_chain(model="llama-3.3-70b-versatile"):
     """Build a chain that generates an executive summary from all key data documents."""
     llm = get_llm(model)
 
@@ -98,7 +98,7 @@ def build_summary_chain(model="gpt-3.5-turbo"):
     return run
 
 
-def build_analysis_chain(model="gpt-3.5-turbo"):
+def build_analysis_chain(model="llama-3.3-70b-versatile"):
     """Build a chain for deeper analysis on a user-specified topic."""
     llm = get_llm(model)
     retriever = get_retriever(k=4)
@@ -117,20 +117,20 @@ def build_analysis_chain(model="gpt-3.5-turbo"):
 # Convenience functions
 # ---------------------------------------------------------------------------
 
-def ask(question: str, model="gpt-3.5-turbo") -> str:
+def ask(question: str, model="llama-3.3-70b-versatile") -> str:
     """Ask a question and get a grounded answer."""
     chain = build_qa_chain(model)
     result = chain.invoke({"query": question})
     return result["result"]
 
 
-def summarize(model="gpt-3.5-turbo") -> str:
+def summarize(model="llama-3.3-70b-versatile") -> str:
     """Generate an executive summary."""
     chain = build_summary_chain(model)
     return chain()
 
 
-def analyze(topic: str, model="gpt-3.5-turbo") -> str:
+def analyze(topic: str, model="llama-3.3-70b-versatile") -> str:
     """Produce a deeper analysis on a given topic."""
     chain = build_analysis_chain(model)
     result = chain.invoke({"query": topic})

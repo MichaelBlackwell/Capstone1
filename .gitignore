@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+test_chart.html
+InsightForge.zip
+*.docx
+.streamlit/secrets.toml

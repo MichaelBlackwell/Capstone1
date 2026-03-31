@@ -66,7 +66,7 @@ summaries = compute_summaries(df)
 # Model selector
 st.sidebar.markdown("---")
 st.sidebar.subheader("AI Model")
-model = st.sidebar.selectbox("Choose LLM", ["gpt-3.5-turbo", "gpt-4"], index=0)
+model = st.sidebar.selectbox("Choose LLM", ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"], index=0)
 
 # Reset chat session when model changes
 if "current_model" not in st.session_state:

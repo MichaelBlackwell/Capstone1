@@ -227,9 +227,9 @@ with tab4:
                 status_box.success(f"Prediction [{i+1}/{total_q}] done ({len(pred)} chars)")
             except Exception as e:
                 status_box.error(f"Prediction [{i+1}/{total_q}] FAILED: {e}")
-                predictions.append({"question": qa["question"], "result": f"ERROR: {e}"})
+                predictions.append({"question": qa["question"], "result": None})
             progress.progress((i + 1) / (total_q * 2), text=f"Predicting {i+1}/{total_q}...")
-            import time; time.sleep(2)
+            import time; time.sleep(20)
 
         # Phase 2: Grade predictions
         from langchain.evaluation.qa import QAEvalChain
@@ -239,7 +239,21 @@ with tab4:
 
         detailed = []
         correct = 0
+        errors = 0
         for i, (qa, pred) in enumerate(zip(GROUND_TRUTH, predictions)):
+            # Skip grading if prediction failed
+            if pred["result"] is None:
+                errors += 1
+                detailed.append({
+                    "question": qa["question"],
+                    "ground_truth": qa["answer"],
+                    "prediction": "Rate limit error",
+                    "grade": "ERROR",
+                    "correct": False,
+                })
+                progress.progress((total_q + i + 1) / (total_q * 2), text=f"Grading {i+1}/{total_q}...")
+                continue
+
             status_box.info(f"Grading [{i+1}/{total_q}]: {qa['question'][:60]}...")
             try:
                 example = [{"query": qa["question"], "answer": qa["answer"]}]
@@ -249,6 +263,7 @@ with tab4:
             except Exception as e:
                 status_box.error(f"Grade [{i+1}/{total_q}] FAILED: {e}")
                 grade = "ERROR"
+                errors += 1
             is_correct = "CORRECT" in grade
             if is_correct:
                 correct += 1
@@ -260,7 +275,7 @@ with tab4:
                 "correct": is_correct,
             })
             progress.progress((total_q + i + 1) / (total_q * 2), text=f"Grading {i+1}/{total_q}...")
-            import time; time.sleep(2)
+            import time; time.sleep(20)
 
         progress.empty()
         status_box.empty()
@@ -269,8 +284,9 @@ with tab4:
         results = {
             "total": total,
             "correct": correct,
-            "incorrect": total - correct,
-            "accuracy": accuracy,
+            "errors": errors,
+            "incorrect": total - correct - errors,
+            "accuracy": correct / (total - errors) if (total - errors) > 0 else 0,
             "detailed": detailed,
         }
         st.session_state["eval_results"] = results
@@ -279,10 +295,11 @@ with tab4:
         results = st.session_state["eval_results"]
 
         # Summary metrics
-        m1, m2, m3 = st.columns(3)
+        m1, m2, m3, m4 = st.columns(4)
         m1.metric("Total Questions", results["total"])
         m2.metric("Correct", results["correct"])
-        m3.metric("Accuracy", f"{results['accuracy']:.0%}")
+        m3.metric("Errors", results.get("errors", 0))
+        m4.metric("Accuracy", f"{results['accuracy']:.0%}")
 
         # Detailed results table
         st.markdown("---")
@@ -290,7 +307,7 @@ with tab4:
         for i, d in enumerate(results["detailed"], 1):
             detail_rows.append({
                 "#": i,
-                "Status": "✅" if d["correct"] else "❌",
+                "Status": "✅" if d["correct"] else ("⚠️" if d["grade"] == "ERROR" else "❌"),
                 "Question": d["question"],
                 "Expected Answer": d["ground_truth"],
                 "Model Answer": d["prediction"],

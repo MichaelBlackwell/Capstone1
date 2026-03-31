@@ -212,10 +212,67 @@ with tab4:
     st.caption("Tests the RAG pipeline against 15 ground-truth Q&A pairs with known answers.")
 
     if st.button("Run Evaluation", key="run_eval"):
-        progress = st.progress(0, text="Evaluating...")
-        with st.spinner("Running all 15 questions through the RAG pipeline and grading..."):
-            results = evaluate(model=model)
+        status_box = st.empty()
+        progress = st.progress(0, text="Starting evaluation...")
+        total_q = len(GROUND_TRUTH)
+
+        # Phase 1: Generate predictions
+        from src.chains import ask, get_llm
+        predictions = []
+        for i, qa in enumerate(GROUND_TRUTH):
+            status_box.info(f"Predicting [{i+1}/{total_q}]: {qa['question'][:60]}...")
+            try:
+                pred = ask(qa["question"], model=model)
+                predictions.append({"question": qa["question"], "result": pred})
+                status_box.success(f"Prediction [{i+1}/{total_q}] done ({len(pred)} chars)")
+            except Exception as e:
+                status_box.error(f"Prediction [{i+1}/{total_q}] FAILED: {e}")
+                predictions.append({"question": qa["question"], "result": f"ERROR: {e}"})
+            progress.progress((i + 1) / (total_q * 2), text=f"Predicting {i+1}/{total_q}...")
+            import time; time.sleep(2)
+
+        # Phase 2: Grade predictions
+        from langchain.evaluation.qa import QAEvalChain
+        status_box.info("Building eval chain...")
+        eval_llm = get_llm(model, temperature=0)
+        eval_chain = QAEvalChain.from_llm(eval_llm)
+
+        detailed = []
+        correct = 0
+        for i, (qa, pred) in enumerate(zip(GROUND_TRUTH, predictions)):
+            status_box.info(f"Grading [{i+1}/{total_q}]: {qa['question'][:60]}...")
+            try:
+                example = [{"query": qa["question"], "answer": qa["answer"]}]
+                res = eval_chain.evaluate(example, [pred])
+                grade = res[0]["results"].strip().upper()
+                status_box.success(f"Grade [{i+1}/{total_q}]: {grade}")
+            except Exception as e:
+                status_box.error(f"Grade [{i+1}/{total_q}] FAILED: {e}")
+                grade = "ERROR"
+            is_correct = "CORRECT" in grade
+            if is_correct:
+                correct += 1
+            detailed.append({
+                "question": qa["question"],
+                "ground_truth": qa["answer"],
+                "prediction": pred["result"],
+                "grade": grade,
+                "correct": is_correct,
+            })
+            progress.progress((total_q + i + 1) / (total_q * 2), text=f"Grading {i+1}/{total_q}...")
+            import time; time.sleep(2)
+
         progress.empty()
+        status_box.empty()
+        total = len(GROUND_TRUTH)
+        accuracy = correct / total if total > 0 else 0
+        results = {
+            "total": total,
+            "correct": correct,
+            "incorrect": total - correct,
+            "accuracy": accuracy,
+            "detailed": detailed,
+        }
         st.session_state["eval_results"] = results
 
     if "eval_results" in st.session_state:

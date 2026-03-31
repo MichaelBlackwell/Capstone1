@@ -15,7 +15,7 @@ from src.data_loader import get_data
 load_dotenv()
 
 
-def get_llm(model="llama-3.3-70b-versatile", temperature=0.3):
+def get_llm(model="openai/gpt-oss-120b", temperature=0.3):
     """Return a ChatGroq instance."""
     return ChatGroq(model=model, temperature=temperature)
 
@@ -66,7 +66,7 @@ Detailed Analysis:"""
 # Chain builders
 # ---------------------------------------------------------------------------
 
-def build_qa_chain(model="llama-3.3-70b-versatile"):
+def build_qa_chain(model="openai/gpt-oss-120b"):
     """Build a RetrievalQA chain linking the hybrid retriever to the QA prompt and LLM."""
     llm = get_llm(model)
     retriever = get_retriever(k=3)
@@ -81,7 +81,7 @@ def build_qa_chain(model="llama-3.3-70b-versatile"):
     return chain
 
 
-def build_summary_chain(model="llama-3.3-70b-versatile"):
+def build_summary_chain(model="openai/gpt-oss-120b"):
     """Build a chain that generates an executive summary from all key data documents."""
     llm = get_llm(model)
 
@@ -98,7 +98,7 @@ def build_summary_chain(model="llama-3.3-70b-versatile"):
     return run
 
 
-def build_analysis_chain(model="llama-3.3-70b-versatile"):
+def build_analysis_chain(model="openai/gpt-oss-120b"):
     """Build a chain for deeper analysis on a user-specified topic."""
     llm = get_llm(model)
     retriever = get_retriever(k=4)
@@ -117,20 +117,20 @@ def build_analysis_chain(model="llama-3.3-70b-versatile"):
 # Convenience functions
 # ---------------------------------------------------------------------------
 
-def ask(question: str, model="llama-3.3-70b-versatile") -> str:
+def ask(question: str, model="openai/gpt-oss-120b") -> str:
     """Ask a question and get a grounded answer."""
     chain = build_qa_chain(model)
     result = chain.invoke({"query": question})
     return result["result"]
 
 
-def summarize(model="llama-3.3-70b-versatile") -> str:
+def summarize(model="openai/gpt-oss-120b") -> str:
     """Generate an executive summary."""
     chain = build_summary_chain(model)
     return chain()
 
 
-def analyze(topic: str, model="llama-3.3-70b-versatile") -> str:
+def analyze(topic: str, model="openai/gpt-oss-120b") -> str:
     """Produce a deeper analysis on a given topic."""
     chain = build_analysis_chain(model)
     result = chain.invoke({"query": topic})

@@ -49,7 +49,7 @@ def create_memory():
     )
 
 
-def build_conversational_chain(memory=None, model="llama-3.3-70b-versatile"):
+def build_conversational_chain(memory=None, model="openai/gpt-oss-120b"):
     """Build a ConversationalRetrievalChain combining RAG + memory."""
     llm = get_llm(model)
     retriever = get_retriever(k=3)
@@ -71,7 +71,7 @@ def build_conversational_chain(memory=None, model="llama-3.3-70b-versatile"):
 class ChatSession:
     """Manages a conversational RAG session with persistent memory."""
 
-    def __init__(self, model="llama-3.3-70b-versatile"):
+    def __init__(self, model="openai/gpt-oss-120b"):
         self.chain, self.memory = build_conversational_chain(model=model)
 
     def ask(self, question: str) -> str:

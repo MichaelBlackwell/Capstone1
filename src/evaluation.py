@@ -75,7 +75,7 @@ GROUND_TRUTH = [
 ]
 
 
-def generate_predictions(ground_truth=GROUND_TRUTH, model="llama-3.3-70b-versatile"):
+def generate_predictions(ground_truth=GROUND_TRUTH, model="openai/gpt-oss-120b"):
     """Run the QA chain on each ground-truth question and collect predictions."""
     predictions = []
     for i, qa in enumerate(ground_truth, 1):
@@ -85,7 +85,7 @@ def generate_predictions(ground_truth=GROUND_TRUTH, model="llama-3.3-70b-versati
     return predictions
 
 
-def evaluate(ground_truth=GROUND_TRUTH, predictions=None, model="llama-3.3-70b-versatile"):
+def evaluate(ground_truth=GROUND_TRUTH, predictions=None, model="openai/gpt-oss-120b"):
     """Evaluate predictions against ground truth using QAEvalChain."""
     if predictions is None:
         print("Generating predictions...")

@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
@@ -10,6 +11,9 @@ from langchain.evaluation.qa import QAEvalChain
 from src.chains import ask, get_llm
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 # Ground-truth Q&A pairs derived from the actual dataset
 GROUND_TRUTH = [
@@ -78,33 +82,50 @@ GROUND_TRUTH = [
 
 def generate_predictions(ground_truth=GROUND_TRUTH, model="openai/gpt-oss-120b"):
     """Run the QA chain on each ground-truth question and collect predictions."""
+    logger.info(f"Starting predictions with model={model}, {len(ground_truth)} questions")
     predictions = []
     for i, qa in enumerate(ground_truth, 1):
-        print(f"  [{i}/{len(ground_truth)}] {qa['question'][:60]}...")
-        pred = ask(qa["question"], model=model)
-        predictions.append({"question": qa["question"], "result": pred})
+        logger.info(f"  PREDICT [{i}/{len(ground_truth)}] {qa['question'][:60]}...")
+        try:
+            pred = ask(qa["question"], model=model)
+            logger.info(f"  PREDICT [{i}] OK — {len(pred)} chars")
+            predictions.append({"question": qa["question"], "result": pred})
+        except Exception as e:
+            logger.error(f"  PREDICT [{i}] FAILED: {e}")
+            predictions.append({"question": qa["question"], "result": f"ERROR: {e}"})
         if i < len(ground_truth):
             time.sleep(2)
+    logger.info(f"Predictions complete: {len(predictions)} results")
     return predictions
 
 
 def evaluate(ground_truth=GROUND_TRUTH, predictions=None, model="openai/gpt-oss-120b"):
     """Evaluate predictions against ground truth using QAEvalChain."""
+    logger.info(f"=== EVALUATION START (model={model}) ===")
+
     if predictions is None:
-        print("Generating predictions...")
+        logger.info("No predictions provided, generating...")
         predictions = generate_predictions(ground_truth, model)
 
+    logger.info("Building eval chain...")
     eval_llm = get_llm(model, temperature=0)
     eval_chain = QAEvalChain.from_llm(eval_llm)
+    logger.info("Eval chain ready, starting grading...")
 
     # Grade one at a time with delays to avoid Groq rate limits
     detailed = []
     correct = 0
     for i, (qa, pred) in enumerate(zip(ground_truth, predictions)):
-        example = [{"query": qa["question"], "answer": qa["answer"]}]
-        prediction = [pred]
-        res = eval_chain.evaluate(example, prediction)
-        grade = res[0]["results"].strip().upper()
+        logger.info(f"  GRADE [{i+1}/{len(ground_truth)}] {qa['question'][:50]}...")
+        try:
+            example = [{"query": qa["question"], "answer": qa["answer"]}]
+            prediction = [pred]
+            res = eval_chain.evaluate(example, prediction)
+            grade = res[0]["results"].strip().upper()
+            logger.info(f"  GRADE [{i+1}] result: {grade}")
+        except Exception as e:
+            logger.error(f"  GRADE [{i+1}] FAILED: {e}")
+            grade = "ERROR"
         is_correct = "CORRECT" in grade
         if is_correct:
             correct += 1

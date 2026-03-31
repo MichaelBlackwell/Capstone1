@@ -1,4 +1,5 @@
 import os
+import time
 
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
@@ -82,6 +83,8 @@ def generate_predictions(ground_truth=GROUND_TRUTH, model="openai/gpt-oss-120b")
         print(f"  [{i}/{len(ground_truth)}] {qa['question'][:60]}...")
         pred = ask(qa["question"], model=model)
         predictions.append({"question": qa["question"], "result": pred})
+        if i < len(ground_truth):
+            time.sleep(2)
     return predictions
 
 

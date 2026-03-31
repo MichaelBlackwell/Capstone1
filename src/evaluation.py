@@ -97,15 +97,14 @@ def evaluate(ground_truth=GROUND_TRUTH, predictions=None, model="openai/gpt-oss-
     eval_llm = get_llm(model, temperature=0)
     eval_chain = QAEvalChain.from_llm(eval_llm)
 
-    # Format inputs for the eval chain
-    examples = [{"query": qa["question"], "answer": qa["answer"]} for qa in ground_truth]
-    results = eval_chain.evaluate(examples, predictions)
-
-    # Compile results
+    # Grade one at a time with delays to avoid Groq rate limits
     detailed = []
     correct = 0
-    for i, (qa, pred, res) in enumerate(zip(ground_truth, predictions, results)):
-        grade = res["results"].strip().upper()
+    for i, (qa, pred) in enumerate(zip(ground_truth, predictions)):
+        example = [{"query": qa["question"], "answer": qa["answer"]}]
+        prediction = [pred]
+        res = eval_chain.evaluate(example, prediction)
+        grade = res[0]["results"].strip().upper()
         is_correct = "CORRECT" in grade
         if is_correct:
             correct += 1
@@ -116,6 +115,8 @@ def evaluate(ground_truth=GROUND_TRUTH, predictions=None, model="openai/gpt-oss-
             "grade": grade,
             "correct": is_correct,
         })
+        if i < len(ground_truth) - 1:
+            time.sleep(2)
 
     total = len(ground_truth)
     accuracy = correct / total if total > 0 else 0
